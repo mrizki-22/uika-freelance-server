@@ -1,0 +1,6 @@
+node_modules
+.env
+.vscode
+uploads/
+.wwebjs_auth/
+controllers/.wwebjs_auth/
