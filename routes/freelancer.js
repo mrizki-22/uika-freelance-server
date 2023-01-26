@@ -1,6 +1,6 @@
 import multer from "multer";
 import express from "express";
-import { signUp, login, confirmOtp, sendOtp, resendOtp, getFreelancerById, getFreelancerByIsVerifiedFalse, verifyFreelancer, declineFreelancer } from "../controllers/freelancer.js";
+import { signUp, login, confirmOtp, sendOtp, resendOtp, getFreelancerById, getFreelancerByIsVerifiedFalse, verifyFreelancer, declineFreelancer, updateProfilePict, updateProfile } from "../controllers/freelancer.js";
 
 const imgURL = "uploads/";
 // storage engine multer
@@ -18,6 +18,8 @@ const upload = multer({ storage: storage });
 const router = express.Router();
 
 router.post("/signup", upload.single("ktm"), signUp, sendOtp);
+router.post("/update-profile", updateProfile, sendOtp);
+router.post("/update-profilePict", upload.single("pp"), updateProfilePict);
 router.post("/login", login);
 router.post("/check-otp", confirmOtp);
 router.get("/unverified", getFreelancerByIsVerifiedFalse);

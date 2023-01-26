@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import client from "./bot.js";
+import fs from "fs";
 
 dotenv.config();
 
@@ -178,6 +179,67 @@ export const declineFreelancer = async (req, res) => {
     client.emit("send-message", { nowa: nowa, message: `Maaf, verifikasi akun anda ditolak😭` });
     res.status(200).json({ message: "Freelancer berhasil ditolak" });
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+//update profile pict
+export const updateProfilePict = async (req, res) => {
+  const { id } = req.body;
+
+  const pp = req.file.filename;
+
+  const freelancer = await Freelancer.findOne({ where: { id: id } });
+  if (!freelancer) {
+    return res.status(404).json({ message: "Freelancer tidak ditemukan" });
+  }
+  //delete previous profile pict if it's not default.jpg
+  if (freelancer.profilePict !== "default.jpg") {
+    fs.unlink(`./uploads/${freelancer.profilePict}`, (err) => {
+      if (err) {
+        console.log(err);
+      }
+    });
+  }
+  freelancer.profilePict = pp;
+  try {
+    await freelancer.save();
+    res.status(200).json({ message: "Profile picture berhasil diubah" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  const { nowa, bio, id } = req.body;
+  try {
+    const freelancer = await Freelancer.findOne({ where: { id: id } });
+    if (!freelancer) {
+      return res.status(404).json({ message: "Freelancer tidak ditemukan" });
+    }
+
+    if (freelancer.nowa !== nowa) {
+      //isWaVerified false
+      freelancer.isWaVerified = false;
+      //generate 6 digits otp
+      const otp = Math.floor(100000 + Math.random() * 900000);
+      freelancer.otp = otp;
+
+      //convert nowa to +62
+      let nowaConvert = nowa.replace("0", "+62");
+      // send otp via whatsapp
+      client.emit("send-message", { nowa: nowaConvert, message: `Kode otp anda adalah ${otp}` });
+    }
+
+    freelancer.nowa = nowa;
+    freelancer.bio = bio;
+
+    await freelancer.save();
+    //generate token
+    const token = generateToken({ id: freelancer.id, name: freelancer.name, nowa: freelancer.nowa, isWaVerified: freelancer.isWaVerified, isVerified: freelancer.isVerified, role: "freelancer" });
+    res.status(200).json({ token: token, message: "Profile berhasil diubah" });
+  } catch (error) {
+    console.log(error.message);
     res.status(500).json({ message: error.message });
   }
 };
